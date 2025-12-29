@@ -197,6 +197,26 @@ def select_top_k(deme: Deme, k: int) -> List[Instance]:
     sorted_instances = sorted(deme.instances, key=lambda inst: inst.score, reverse=True)
     return sorted_instances[:k]
 
+def tournament_selection(deme: Deme, k:int, tournament_size: int) -> List[Instance]:
+    """
+    tournament_selection: Selects instances from the deme using tournament selection.
+    Args:
+        deme (Deme): The deme containing instances.
+        k (int): The number of instances to select.
+        tournament_size (int): The size of each tournament.
+    Returns: A list of selected instances.
+    """
+    selected_instances = []
+    num_instances = len(deme.instances)
+
+    K = min(k, num_instances)
+    for _ in range(K):
+        tournament = random.sample(deme.instances, min(tournament_size, num_instances))
+        winner = max(tournament, key=lambda inst: inst.score)
+        selected_instances.append(winner)
+
+    return selected_instances
+
 def knobs_from_truth_table(ITable: List[dict]) -> List[Knob]:
     """
     Given a truth table (list of dict rows), extract:
