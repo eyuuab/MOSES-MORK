@@ -23,8 +23,7 @@ class TestGetTopLevelFeatures(unittest.TestCase):
 
 class TestVariationQuantale(unittest.TestCase):
     def setUp(self):
-        # Minimal Knob stub if real Knob is more complex
-    
+            
         self.knob_a = Knob(symbol="A", id=1, Value=[True, False])
         self.knob_b = Knob(symbol="B", id=2, Value=[True, False])
         self.knob_c = Knob(symbol="C", id=3, Value=[True, False])
