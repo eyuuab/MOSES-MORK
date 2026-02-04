@@ -136,12 +136,13 @@ class TestDependencyMiner(unittest.TestCase):
             "(AND B (NOT C))",
             "(AND (NOT B) (NOT C))",
         ]
+        self.default_weights = [1.0] * len(self.data)
 
     def test_fit_and_counts(self):
-        miner = DependencyMiner().fit(self.data)
+        miner = DependencyMiner().fit(self.data, self.default_weights)
 
         # There must be some contexts
-        self.assertGreater(miner.total_contexts, 0)
+        self.assertGreater(miner.total_weighted_contexts, 0)
 
         # At least A, B, C (or their NOT/OR variants) must appear as single keys
         single_keys = set(miner.single_counts.keys())
@@ -153,7 +154,7 @@ class TestDependencyMiner(unittest.TestCase):
         self.assertGreater(len(miner.pair_counts), 0)
 
     def test_meaningful_dependencies(self):
-        miner = DependencyMiner().fit(self.data)
+        miner = DependencyMiner().fit(self.data, self.default_weights)
         deps = miner.get_meaningful_dependencies(min_pmi=0.0, min_freq=2)
 
         # Should return a non-empty list for these synthetic data
