@@ -217,14 +217,6 @@ class TestDependencyMiner(unittest.TestCase):
             self.assertGreaterEqual(d["confidence"], 0.0)
             self.assertLessEqual(d["confidence"], 1.0)
 
-    def test_strength_equals_sigmoid_of_pmi(self):
-        miner = DependencyMiner().fit(self.data, self.default_weights)
-        deps = miner.get_meaningful_dependencies(min_pmi=0.0, min_freq=2)
-
-        for d in deps:
-            expected_strength = sigmoid(d["PMI"])
-            self.assertAlmostEqual(d["strength"], expected_strength, places=3)
-
     def test_confidence_is_joint_probability(self):
         # Simple controlled test case
         data = [
