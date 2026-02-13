@@ -57,6 +57,7 @@ def run_variation(deme, fitness, hyperparams, target):
             continue
         
         bg.run_evidence_propagation(steps=20)
+        if generation == hyperparams.num_generations - 1: bg.visualize()
 
         # print("\n--- Final STV Results ---")
         # print(f"{'Variable':<10} | {'Strength':<8} | {'Confidence':<10} | {'Counts (a/b)'}")
@@ -179,15 +180,13 @@ def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperpara
                 new_exemplar = metapop[backup_index]
                 print(f" -> Switching focus to rank {backup_index}: {new_exemplar.value[:20]}... (Score: {new_exemplar.score:.4f})")
                 
-                # Optional: Temporarily boost mutation to break habits
-                # hyperparams.mutation_rate = min(0.8, hyperparams.mutation_rate + 0.1)
 
         return run_moses(new_exemplar, fitness, hyperparams, target, csv_path, metapop, max_iter - 1)
 
 
 
 def main(): 
-    # random.seed(42)
+    random.seed(42)
     
     metapop = []
     hyperparams = Hyperparams(mutation_rate=0.3, crossover_rate=0.5, num_generations=20, neighborhood_size=15, bernoulli_prob=0.1, uniform_prob=0.2)
@@ -199,160 +198,8 @@ def main():
     exemplar.score = exemplar_score
     print(f"Exemplar: {exemplar.value} | Score: {exemplar.score}")
     metapop.append(exemplar)
-    new_metapop = run_moses(exemplar, fitness, hyperparams, target, "example_data/test_bin.csv", metapop, max_iter=15)
-    # new_metapop.sort(key=lambda x: x.score, reverse=True)
-    # for inst in new_metapop:
-
-    # demes = sample_from_TTable("example_data/test_bin.csv", hyperparams, exemplar, knobs, target, output_col='O')
-    # print(f"Running moses for {len(demes)} demes...")
-    # new_demes = []
-    # for deme in demes:
-    #     deme = run_variation(deme, fitness, hyperparams, target)
-    #     new_demes.append(deme)
-
-    # print("\n--- Top Instances from Each Deme ---")
-    # best_instances = []
-    # for i, deme in enumerate(new_demes):
-    #     if not deme.instances:
-    #         print(f"Deme {i}: Empty")
-    #         continue
-    #     inst = max(deme.instances, key=lambda x: x.score)
-    #     best_instances.append(inst)
-    #     print(f"Deme {i} Best: {inst.value:<40} | Score: {inst.score:.4f}")
+    new_metapop = run_moses(exemplar, fitness, hyperparams, target, "example_data/test_bin.csv", metapop, max_iter=30)
     
-
-
-    # k = int(len(demes[0].instances) * 0.1)
-    # if k < 1: k = 1
-
-    # k = 7 if len(demes[0].instances) >= 7 else len(demes[0].instances)
-    # selected_exemplars = tournament_selection(demes[0], k=k, tournament_size=3)
-    # scores = {}
-    # for index, deme in enumerate(demes):
-    #     deme_score = sum(inst.score for inst in deme.instances)
-    #     scores[index] = deme_score
-
-    # best_index = max(scores, key=scores.get)
-    # print(f"Best Deme Index: {best_index} with Score: {scores[best_index]:.4f}")
-
-    # selected_exemplars = select_top_k(demes[best_index], k=7)
-    # values = [inst.value for inst in selected_exemplars]
-    # weights = [inst.score for inst in selected_exemplars]
-    # miner = DependencyMiner()
-    # print(f"Selected Exemplars for Dependency Mining: {values}")
-    # miner.fit(values, weights)
-    # print(f"Mining for correlation for {len(values)} exemplars...")
-    # correlation = miner.get_meaningful_dependencies()
-    # print(f"{'Pair' :>20} | {'Strength' :>6} | {'Confidence' :>8}")
-    # print("-" * 50)
-    # for row in correlation:
-    #     print(f"{row['pair']:>20} | {row['strength']:.4f} | {row['confidence']:.4f}")
-    
-    # bg = BetaFactorGraph()
-    # for row in correlation:
-    #     bg.add_dependency_rule(row['pair'], row['strength'], row['confidence'])
-
-    # if len(correlation) > 0:
-    #     top_rule = correlation[0]
-    #     parts = top_rule['pair'].split(' -- ')
-    #     if len(parts) > 0:
-    #         root_node = parts[0]
-    #         print(f"\nDynamically setting prior for '{root_node}' based on rule: {top_rule['pair']}")
-            
-    #         bg.set_prior(
-    #             root_node, 
-    #             stv_strength=top_rule['strength'], 
-    #             stv_confidence=top_rule['confidence']
-    #         )
-    # else:
-    #     print("No correlations found. Setting default prior for 'A'.")
-    #     bg.set_prior("A", stv_strength=0.5, stv_confidence=0.1)
-
-
-    # bg.run_evidence_propagation(steps=20)
-    # print("\n--- Final STV Results ---")
-    # print(f"{'Variable':<10} | {'Strength':<8} | {'Confidence':<10} | {'Counts (a/b)'}")
-    # for name, node in bg.nodes.items():
-    #     s = node.strength
-    #     c = node.confidence
-    #     print(f"{name:<10} | {s:.4f}   | {c:.4f}     | {node.alpha:.1f}/{node.beta:.1f}")
-
-    # # bg.visualize()
-
-
-    # stv_dict = {}
-    # for name, node in bg.nodes.items():
-    #     # VariationQuantale expects values in the format (Strength, Confidence)
-    #     stv_dict[name] = (node.strength, node.confidence)
-        
-    # print(f"\nExtracted STV Values for Crossover: {stv_dict}")
-
-    # # nodes_for_crossover = [name for name, node in bg.nodes.items()]
-    
-    # # selected_for_crossover = [inst for inst in selected_exemplars if any(k in inst.value for k in nodes_for_crossover[:1])]
-    # # print(f"\nSelected for Crossover (based on top nodes): {[inst.value for inst in selected_for_crossover]}")
-    # print(f"\nSelected for Crossover (based on top nodes): {[inst.value for inst in selected_exemplars]}")
-    # children = crossTopOne(selected_exemplars, stv_dict, target)
-    # for inst in children:
-    #     print(f"Child: {inst.value} | Score: {inst.score}")
-
-    # mut_instance_parent = selected_for_crossover[0] if selected_for_crossover[0].score > selected_for_crossover[1].score else selected_for_crossover[1] 
-    # mutation = Mutation(mut_instance_parent, stv_dict, hyperparams)
-    # mutated_child1 = mutation.execute_additive()
-    # mutated_child1.score = fitness.get_fitness(mutated_child1)
-    # mutated_child2 = mutation.execute_multiplicative()
-    # mutated_child2.score = fitness.get_fitness(mutated_child2)
-    # print(f"\nMutation of '{mut_instance_parent.value}' | Score: {mut_instance_parent.score}")
-    # print(f"Mutated Instance 1: {mutated_child1.value} | Score: {mutated_child1.score}")
-    # print(f"Mutated Instance 2: {mutated_child2.value} | Score: {mutated_child2.score}")
-    
-
-
-    # if len(selected_for_crossover) >= 2:
-    #     parent1 = selected_for_crossover[0]
-    #     parent2 = selected_for_crossover[1]
-        
-    #     # Pass the extracted dictionary to the crossover class
-    #     crossover = VariationQuantale(parent1, parent2, stv_dict)
-        
-    #     # Optional: Perform Crossover
-    #     child = crossover.execute_crossover()
-    #     score = fitness.get_fitness(child)
-    #     child.score = score
-    #     print(f"\nCrossover between '{parent1.value}' | Score: {parent1.score} and '{parent2.value}' | Score: {parent1.score}")
-    #     print(f"Crossover Child: {child.value} | Score: {child.score} | Knobs: {[k.symbol for k in child.knobs]}")
-    # else:
-    #     print("Not enough instances selected for crossover.")
-
-
-
-
-    # crossover = VariationQuantale()
-
-
-
-    
-
-
-    # program_sketch = "(AND $ $)"
-    # ITable = [
-    # {"A": True,  "B": True,  "O": True},
-    # {"A": True,  "B": False, "O": False},
-    # {"A": False, "B": True,  "O": False},
-    # {"A": False, "B": False, "O": False},
-    # ]
-
-    # deme = initialize_deme(program_sketch, ITable)
-    
-    # print(deme.to_tree())
-    # print("")
-
-    # instances = select_top_k(deme, k=2)
-    # print(f"selected instances: {instances}")
-    # print("")
-    # fg = deme.factor_graph
-    # for f in fg.factors:
-    #     print(f.name, "->", [v.id for v in f.variables])
     
 if __name__ == "__main__":
     main()
