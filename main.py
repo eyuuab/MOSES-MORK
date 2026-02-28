@@ -1,204 +1,100 @@
 from DependencyMiner.miner import DependencyMiner
-
 from Representation.representation import *
 from Representation.helpers import *
 from Representation.csv_parser import load_truth_table
 from Representation.selection import select_top_k, tournament_selection
 from Representation.sampling import sample_from_TTable
-
 from Variation_quantale.crossover import VariationQuantale, crossTopOne
 from Variation_quantale.mutation import Mutation
-
 from FactorGraph_EDA.beta_bp import BetaFactorGraph
-
+from Moses.run_bp_moses import run_bp_moses, _finalize_metapop
+from Moses.run_abp_moses import run_abp_moses
 import random
+import math
+from typing import List
 
-def run_variation(deme, fitness, hyperparams, target):
-
-    bg = BetaFactorGraph()
+def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperparams, 
+              knobs: List[Knob], target: List[bool], csv_path: str, 
+              metapop: List[Instance], max_iter: int = 100, fg_type: str = "alpha") -> List[Instance]:
+    """
+    Unified entry point for running MOSES optimization.
     
-    for generation in range(hyperparams.num_generations):
-        print("-" * 60)
-        print(f"\n--- Generation {generation + 1} ---")
-
-        selected_exemplars = select_top_k(deme, k=7)
-
-        values = [inst.value for inst in deme.instances]
-        weights = [inst.score for inst in deme.instances]
-        # values = [inst.value for inst in selected_exemplars]
-        # weights = [inst.score for inst in selected_exemplars]
-        miner = DependencyMiner()
-        # print(f"\tSelected number  of Exemplars for Dependency Mining: {len(values)}")
-        miner.fit(values, weights)
-        # print(f"\nMining for correlation for {len(values)} exemplars...")
-        correlation = miner.get_meaningful_dependencies()
-        # print(f"{'Pair' :>20} | {'Strength' :>6} | {'Confidence' :>8}")
-        print("-" * 50)    
-        for row in correlation:
-            # print(f"{row['pair']:>20} | {row['strength']:.4f} | {row['confidence']:.4f}")
-            bg.add_dependency_rule(row['pair'], row['strength'], row['confidence'])
-
-        if len(correlation) > 0:
-            top_rule = correlation[0]
-            parts = top_rule['pair'].split(' -- ')
-            if len(parts) > 0:
-                root_node = parts[0]
-                print(f"\nDynamically setting prior for '{root_node}' based on rule: {top_rule['pair']}")
-
-                bg.set_prior(
-                    root_node, 
-                    stv_strength=top_rule['strength'], 
-                    stv_confidence=top_rule['confidence']
-                )
-        else:
-            # TODO: Sample new instance if no correlations found.
-            print("No correlations found...")
-            # bg.set_prior("A", stv_strength=0.5, stv_confidence=0.1)
-            continue
-        
-        bg.run_evidence_propagation(steps=20)
-        if generation == hyperparams.num_generations - 1: bg.visualize()
-
-        # print("\n--- Final STV Results ---")
-        # print(f"{'Variable':<10} | {'Strength':<8} | {'Confidence':<10} | {'Counts (a/b)'}")
-        # sorted_nodes = sorted(bg.nodes.items(), key=lambda item: item[1].confidence, reverse=True)
-        # for name, node in sorted_nodes:
-        #     s = node.strength
-        #     c = node.confidence
-            # print(f"{name:<10} | {s:.4f}   | {c:.4f}     | {node.alpha:.1f}/{node.beta:.1f}")
-        
-        stv_dict = {}
-        for name, node in bg.nodes.items():
-            stv_dict[name] = (node.strength, node.confidence)
-        
-        # print(f"\nExtracted STV Values for Crossover: {stv_dict}")
-        # print(f"\nSelected for Crossover (based on top nodes): {[inst.value for inst in selected_exemplars]}")
-        raw_children = crossTopOne(selected_exemplars, stv_dict, target)
-        
-        children = []
-        seen_child_values = set()        
-        seen_child_values = {inst.value for inst in deme.instances}
-
-        for inst in raw_children:
-            if inst.value not in seen_child_values:
-                children.append(inst)
-                seen_child_values.add(inst.value)
-                # print(f"Child: {inst.value} | Score: {inst.score}")
-
-        mut_parent = max(selected_exemplars, key=lambda x: x.score)
-        mutation = Mutation(mut_parent, stv_dict, hyperparams)
-        new_mutants = []
-
-        # print(f"\nMutation of '{mut_parent.value}' | Score: {mut_parent.score}")
-        child1 = mutation.execute_additive()
-        if isinstance(child1, Instance):
-            child1.score = fitness.get_fitness(child1)
-            new_mutants.append(child1)
-            # print(f"Additive Mutation Child: {child1.value} | Score: {child1.score}")
-
-        child2 = mutation.execute_multiplicative()
-        if isinstance(child2, Instance):
-            child2.score = fitness.get_fitness(child2)
-            new_mutants.append(child2)
-            # print(f"Multiplicative Mutation Child: {child2.value} | Score: {child2.score}")
-
-
-        children.extend(new_mutants)
-        unique_children = []
-        # Create a set of existing values in the current deme to avoid re-adding them
-        existing_values = {inst.value for inst in deme.instances}
-        
-        for child in children:
-            if child.value not in existing_values:
-                unique_children.append(child)
-                existing_values.add(child.value) # Add to set to prevent duplicates within the batch too
-            else:
-                pass
-        
-        # Extend with only unique children
-        deme.instances.extend(unique_children)
+    Args:
+        exemplar: Initial instance
+        fitness: Fitness oracle
+        hyperparams: Hyperparameters
+        knobs: List of knobs (not strictly used directly by recursion but passed for consistency if needed)
+        target: Target values
+        csv_path: Path to CSV data
+        metapop: Initial metapopulation
+        max_iter: Maximum iterations
+        fg_type: 'beta' for beta-variational MOSES, 'alpha' for standard MOSES
     
-    return deme
-
-def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperparams,
-              target: List[bool], csv_path:str, metapop: List[Instance], max_iter: int) -> List[Instance]:
-    if max_iter <= 0:
-        print("Max iterations limit reached...")
-        print(f"\n--- Final Metapopulation ---")
-        unique_meta = {inst.value: inst for inst in metapop}.values()
-        sorted_meta = sorted(unique_meta, key=lambda x: (-x.score, x._get_complexity()))
-        
-        for inst in sorted_meta[:10]:
-            print(f"Instance: {inst.value} | Score: {inst.score:.5f}")
-        return list(sorted_meta)
+    Returns: Final metapopulation of instances after evolution.
+    """
+    
+    print(f"Starting MOSES Run with Strategy: {fg_type.upper()}")
+    
+    if fg_type.lower() == "beta":
+        return run_bp_moses(
+            exemplar=exemplar,
+            fitness=fitness,
+            hyperparams=hyperparams,
+            target=target,
+            csv_path=csv_path,
+            metapop=metapop,
+            iteration=1,
+            max_iter=max_iter,
+            distance=1,
+            max_dist=20,
+            last_chance=False,
+            best_possible_score=1.0
+        )
+    elif fg_type.lower() == "alpha":
+        final_metapop = run_abp_moses(
+        exemplar=exemplar, fitness=fitness, hyperparams=hyperparams, knobs=knobs, target=target,
+        csv_path=csv_path, metapop=metapop, max_iter=max_iter,
+    )
+        _finalize_metapop(final_metapop)
+        return final_metapop
     else:
-        demes = sample_from_TTable(csv_path, hyperparams, exemplar, exemplar.knobs, target, output_col='O')
-        print(f"\n[Iter {max_iter}] Running Variation for {len(demes)} demes centered on: {exemplar.value}...")
+        print(f"Unknown fg_type '{fg_type}', defaulting to Alpha FG MOSES.")
+        final_metapop = run_abp_moses(
+        exemplar=exemplar, fitness=fitness, hyperparams=hyperparams, knobs=knobs, target=target,
+        csv_path=csv_path, metapop=metapop, max_iter=max_iter,
+        )
+        _finalize_metapop(final_metapop)
+        return final_metapop
         
-        new_demes = []
-        for deme in demes:
-            deme = run_variation(deme, fitness, hyperparams, target)
-            new_demes.append(deme)
-
-        print("\n--- Top Instances from Each Deme ---")
-        best_instances = []
-
-        for i, deme in enumerate(new_demes):
-            if not deme.instances:
-                print(f"Deme {i}: Empty")
-                continue
-            inst = max(deme.instances, key=lambda x: x.score)
-            best_instances.append(inst)
-            print(f"Deme {i} Best: {inst.value:<30} | Score: {inst.score:.4f}")
-        meta_dict = {inst.value: inst for inst in metapop}
-        added_count = 0
-
-        for inst in best_instances:
-            if inst.value not in meta_dict:
-                meta_dict[inst.value] = inst
-                added_count += 1
-            # If it exists but we found a better score (unlikely purely deterministic)
-            elif inst.score > meta_dict[inst.value].score:
-                meta_dict[inst.value] = inst
-
-        # Convert back to list
-        metapop = list(meta_dict.values())
-        metapop.sort(key=lambda x: x.score, reverse=True)
         
-        print(f"Merged {added_count} new unique instances. Metapop Size: {len(metapop)}")
-
-        new_exemplar = metapop[0]
-    
-        # Check if we are stuck on the same exemplar as previous round
-        if new_exemplar.value == exemplar.value:
-            print(f"(!) Stagnation: Best is still {new_exemplar.value}... (Score: {new_exemplar.score:.4f})")
-            
-            if len(metapop) > 1:
-                # Select a backup exemplar from the top few (mostly second best)
-                backup_index = random.randint(1, min(4, len(metapop)-1))
-                
-                new_exemplar = metapop[backup_index]
-                print(f" -> Switching focus to rank {backup_index}: {new_exemplar.value[:20]}... (Score: {new_exemplar.score:.4f})")
-                
-
-        return run_moses(new_exemplar, fitness, hyperparams, target, csv_path, metapop, max_iter - 1)
-
-
 
 def main(): 
     random.seed(42)
     
     metapop = []
-    hyperparams = Hyperparams(mutation_rate=0.3, crossover_rate=0.5, num_generations=20, neighborhood_size=15, bernoulli_prob=0.1, uniform_prob=0.2)
-    input, target = load_truth_table("example_data/test_bin.csv", output_col='O') 
+    csv_path = "example_data/test_and_4vars.csv"
+    hyperparams = Hyperparams(mutation_rate=0.3, crossover_rate=0.5, num_generations=30, neighborhood_size=20, bernoulli_prob=0.1, uniform_prob=0.2)
+    input, target = load_truth_table(csv_path, output_col='O') 
     knobs = knobs_from_truth_table(input)
+    
     exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
     fitness = FitnessOracle(target)
-    exemplar_score = fitness.get_fitness(exemplar)
-    exemplar.score = exemplar_score
-    print(f"Exemplar: {exemplar.value} | Score: {exemplar.score}")
+    exemplar.score = fitness.get_fitness(exemplar)
+    
+    print(f"Initial Exemplar: {exemplar.value} | Score: {exemplar.score}")
     metapop.append(exemplar)
-    new_metapop = run_moses(exemplar, fitness, hyperparams, target, "example_data/test_bin.csv", metapop, max_iter=30)
+    
+    final_metapop = run_moses(
+        exemplar=exemplar, 
+        fitness=fitness, 
+        hyperparams=hyperparams, 
+        knobs=knobs,
+        target=target, 
+        csv_path=csv_path, 
+        metapop=metapop, 
+        max_iter=30,
+        fg_type="alpha"  # Change to "alpha" for standard MOSES, "beta" for BP-based MOSES
+    )
     
     
 if __name__ == "__main__":

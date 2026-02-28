@@ -1,7 +1,7 @@
 import unittest
 
-from Representation.eda import apply_deduction
-from Representation.factor_graph import FactorGraph, SubtreeVariable, PairwiseFactor
+from FactorGraph_EDA.eda import apply_deduction
+from FactorGraph_EDA.factor_graph import FactorGraph, SubtreeVariable, PairwiseFactor
 
 
 class TestEdaDeduction(unittest.TestCase):

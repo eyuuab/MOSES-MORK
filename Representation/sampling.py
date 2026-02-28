@@ -78,7 +78,7 @@ def randomBernoulli(hyperparams: Hyperparams, instance: Instance,
     """
     instanceExp = deepcopy(instance.value)
     sexp = tokenize(instanceExp)
-    op = sexp[1] if sexp else None
+    op = sexp[1] if sexp and len(sexp) > 1 else None
     root = parse_sexpr(sexp)
 
     perms, new_knobs = sample_logical_perms(op, features)
@@ -244,7 +244,6 @@ def extract_features(csv_path: str, output_col: str = 'O'):
         max_interaction_order=order,
         output_type='subsets'
     )
-    print("Features: ", features)
     return features
 
 def reduce_and_score(instances: List[Instance], fitness: FitnessOracle, metta: MeTTa) -> List[Instance]:

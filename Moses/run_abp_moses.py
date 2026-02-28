@@ -4,11 +4,11 @@ from Representation.representation import *
 from Representation.helpers import *
 from Representation.csv_parser import load_truth_table
 from Representation.selection import select_top_k  
-from Representation.eda import run_deme_eda
+from FactorGraph_EDA.eda import run_deme_eda
 from Representation.sampling import sample_from_TTable
 
 
-def run_moses(
+def run_abp_moses(
     exemplar: Instance,
     fitness: FitnessOracle,
     hyperparams: Hyperparams,
@@ -90,47 +90,7 @@ def run_moses(
         print(f"  (!) Stagnation — switching to rank {backup_idx}: "
               f"{new_exemplar.value[:30]}  (score={new_exemplar.score:.4f})")
 
-    return run_moses(
+    return run_abp_moses(
         new_exemplar, fitness, hyperparams, knobs, target,
         csv_path, metapop, max_iter - 1,
     )
-
-
-def main():
-    # random.seed(42)
-
-    csv_path = "example_data/test_and_4vars.csv"
-    hyperparams = Hyperparams(
-        mutation_rate=0.3,
-        crossover_rate=0.5,
-        num_generations=20,
-        neighborhood_size=15,
-        bernoulli_prob=0.2,
-        uniform_prob=0.2,
-    )
-    ### Loading the truth table and extract knobs
-    input_rows, target = load_truth_table(csv_path, output_col='O')
-    knobs = knobs_from_truth_table(input_rows)
-    print(f"Knobs: {[k.symbol for k in knobs]}")
-
-    # Start with an empty exemplar
-    exemplar = Instance(value="(AND)", id=0, score=0.0, knobs=[])
-    fitness = FitnessOracle(target)
-    ### Score the initial exemplar
-    exemplar.score = fitness.get_fitness(exemplar)
-    print(f"Exemplar: {exemplar.value} | Score: {exemplar.score}")
-
-    metapop = [exemplar]
-    print('*' * 60)
-    final_metapop = run_moses(
-        exemplar, fitness, hyperparams, knobs, target,
-        csv_path, metapop, max_iter=15,
-    )
-    print('*' * 60)
-    print(f"\nTop results:")
-    for inst in final_metapop[:10]:
-        print(f"  {inst.value:<40} | Score: {inst.score:.5f}")
-
-
-if __name__ == "__main__":
-    main()

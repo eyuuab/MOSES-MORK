@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import List, Optional, Tuple
 
 from Representation.pln import STV, c2w, w2c, revision, deduction, negation
-from Representation.factor_graph import SubtreeVariable, PairwiseFactor, FactorGraph
+from FactorGraph_EDA.factor_graph import SubtreeVariable, PairwiseFactor, FactorGraph
 from Representation.representation import Instance, Knob, Deme, FitnessOracle
 from Representation.selection import select_top_k
 from Representation.helpers import get_top_level_features, isOP, tokenize
