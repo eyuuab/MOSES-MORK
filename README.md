@@ -551,36 +551,36 @@ flowchart TD
 ### 15.3 Beta path (BP-guided variation inside deme)
 ```mermaid
 flowchart TD
-  A[run_variation(deme)] --> B[Select top-k exemplars]
-  B --> C[DependencyMiner.fit(values, weights)]
-  C --> D[Get meaningful dependencies]
-  D --> E[Build/update BetaFactorGraph rules]
-  E --> F[Anchor prior from top rule]
-  F --> G[Evidence propagation]
-  G --> H[Compute stv_dict from node beliefs]
+  A["run_variation(deme)"] --> B["Select top-k exemplars"]
+  B --> C["DependencyMiner.fit(values, weights)"]
+  C --> D["Get meaningful dependencies"]
+  D --> E["Build/update BetaFactorGraph rules"]
+  E --> F["Anchor prior from top rule"]
+  F --> G["Evidence propagation"]
+  G --> H["Compute stv_dict from node beliefs"]
 
-  H --> I{Enough neighbors for crossover?}
-  I -->|yes| J[crossTopOne -> children]
-  I -->|no| K[Skip crossover]
+  H --> I{"Enough neighbors for crossover?"}
+  I -->|yes| J["crossTopOne" -> "children"]
+  I -->|no| K["Skip crossover"]
 
-  J --> L[Mutation additive + multiplicative]
+  J --> L["Mutation additive + multiplicative"]
   K --> L
 
-  L --> M[Reduce & score candidates]
-  M --> N[Add unique candidates to deme]
-  N --> O[Next generation / return updated deme]
+  L --> M["Reduce & score candidates"]
+  M --> N["Add unique candidates to deme"]
+  N --> O["Next generation / return updated deme"]
 ```
 
 ### 15.4 ENF reduction pipeline (reduct/enf)
 ```mermaid
 flowchart TD
-  A[reduce(metta, expr)] --> B[Parse expression]
-  B --> C[Build binary expression tree]
-  C --> D[propagateTruthValue -> constraint tree]
-  D --> E[gatherJunctors normalize AND/OR]
-  E --> F[reduceToElegance apply reductions]
-  F --> G[constraint_tree_to_metta_expr]
-  G --> H[Return reduced expression]
+  A["reduce(metta, expr)"] --> B["Parse expression"]
+  B --> C["Build binary expression tree"]
+  C --> D["propagateTruthValue -> constraint tree"]
+  D --> E["gatherJunctors normalize AND/OR"]
+  E --> F["reduceToElegance apply reductions"]
+  F --> G["constraint_tree_to_metta_expr"]
+  G --> H["Return reduced expression"]
 ```
 ---
 
