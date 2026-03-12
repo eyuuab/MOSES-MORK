@@ -65,15 +65,90 @@ def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperpara
         )
         _finalize_metapop(final_metapop)
         return final_metapop
-        
-        
+
+
+def grid_search_tuning():
+    print("--- Starting Hyperparameter Grid Search ---")
+    
+    # b_probs = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+    # u_probs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+    b_probs = [0.5, 0.6, 0.7, 0.8]
+    u_probs = [0.5, 0.6, 0.7, 0.8]
+    
+    
+    random.seed(42)
+    csv_path = "example_data/test_parity_3.csv"
+    input_data, target = load_truth_table(csv_path, output_col='O')
+    knobs = knobs_from_truth_table(input_data)
+    knobs = [k for k in knobs if k.symbol != 'O']
+    fitness = FitnessOracle(target)
+
+    results = []
+
+    for b in b_probs:
+        for u in u_probs:
+            print(f"\nTesting: Bernoulli={b}, Uniform={u}")
+            
+            current_hp = Hyperparams(
+                mutation_rate=0.3, 
+                crossover_rate=0.5, 
+                num_generations=15,
+                neighborhood_size=20,
+                bernoulli_prob=b, 
+                uniform_prob=u
+            )
+            
+            exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
+            exemplar.score = fitness.get_fitness(exemplar)
+            
+            metapop = [exemplar]
+            
+            final_pop = run_moses(
+                exemplar=exemplar, 
+                fitness=fitness, 
+                hyperparams=current_hp, 
+                knobs=knobs,
+                target=target, 
+                csv_path=csv_path, 
+                metapop=metapop, 
+                max_iter=5, 
+                fg_type="beta"
+            )
+            
+            # Find best score in this run
+            if final_pop:
+                best_inst = max(final_pop, key=lambda x: x.score)
+                results.append({
+                    'b': b, 
+                    'u': u, 
+                    'score': best_inst.score, 
+                    'instance': best_inst.value
+                })
+                print(f"-> Result: Score {best_inst.score:.4f}")
+            else:
+                print("-> Result: No population return")
+
+    # 4. Report Best
+    print("\n--- Tuning Results ---")
+    results.sort(key=lambda x: x['score'], reverse=True)
+    for r in results:
+        print(f"Score: {r['score']:.4f} | B={r['b']}, U={r['u']} | Inst: {r['instance']}")
+
+    print(f"\n*** Best Configuration: B={results[0]['b']}, U={results[0]['u']} ***")
+
+if __name__ == "__main__":
+    # main() 
+    grid_search_tuning() # Call this instead        
+
+
+
 
 def main(): 
     random.seed(42)
-    
+    # grid_search_tuning()
     metapop = []
-    csv_path = "example_data/test_bin.csv"
-    hyperparams = Hyperparams(mutation_rate=0.3, crossover_rate=0.5, num_generations=30, neighborhood_size=20, bernoulli_prob=0.5, uniform_prob=0.2)
+    csv_path = "example_data/test_parity_3.csv"
+    hyperparams = Hyperparams(mutation_rate=0.3, crossover_rate=0.5, num_generations=30, neighborhood_size=20, bernoulli_prob=0.6, uniform_prob=0.8)
     input, target = load_truth_table(csv_path, output_col='O')
     knobs = knobs_from_truth_table(input)
     knobs = [k for k in knobs if k.symbol != 'O']
@@ -92,7 +167,7 @@ def main():
         target=target, 
         csv_path=csv_path, 
         metapop=metapop, 
-        max_iter=300,
+        max_iter=10,
         fg_type="beta"  # Change to "alpha" for alpha version of factor graph, "beta" for BP-based MOSES
     )
     
