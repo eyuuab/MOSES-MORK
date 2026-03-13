@@ -122,12 +122,19 @@ class Instance:
 
 @dataclass
 class Hyperparams:
+    """Tunable controls for search breadth, variation, and recovery behavior."""
     mutation_rate: float
     crossover_rate: float
     num_generations: int
     neighborhood_size: int
+    max_iter: int = 100
+    fg_type: str = "alpha"
     bernoulli_prob: float = 0.5
     uniform_prob: float = 0.5
+    initial_population_size: int = 2
+    exemplar_selection_size: int = 7
+    min_crossover_neighbors: int = 5
+    evidence_propagation_steps: int = 20
 
 class Deme(Quantale):
     def __init__(self, instances: List[Instance], id: str, q_hyper: Hyperparams) -> None:
@@ -160,10 +167,12 @@ class Deme(Quantale):
                         expr = add_arg(expr, knob.symbol)
                         instances.value = expr
             
-            if len(self.instances) == 1:
+            if len(self.instances) < self.q_hyper.initial_population_size:
                 parent = deepcopy(self.instances[0])
-                new_instance = sample_random_instances(parent, self.q_hyper)
-                self.instances.append(new_instance)
+                missing_instances = self.q_hyper.initial_population_size - len(self.instances)
+                for _ in range(missing_instances):
+                    new_instance = sample_random_instances(parent, self.q_hyper)
+                    self.instances.append(new_instance)
             
             # self.factor_graph = build_factor_graph_from_deme(self)
         # TODO: have pattern miner to extract new dependencies between instances and update the factor graph
