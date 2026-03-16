@@ -95,12 +95,7 @@ class Mutation(Quantale):
                 keep_mask.append(result)
                 
         if not keep_mask:
-             return Instance(
-                 value=self.instance_value,
-                 id=random.randint(1000, 9999),
-                 score=0.0,
-                 knobs=list(self.instance.knobs)
-             )
+            return f"({self.base_op})"  
              
         instance_exp = f"({self.base_op} {' '.join(keep_mask)})"
         new_instance = Instance(
