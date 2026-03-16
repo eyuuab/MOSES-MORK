@@ -184,41 +184,6 @@ class Deme(Quantale):
         # return ["{Deme " + str(self.id) + " Generation: " + str(self.generation) + " Instances: " + str(len(self.instances)) + "}",
         #         [{"Expresstion": (instance.value, instance.knobs) for instance in self.instances}]]
     
-def initialize_deme(program_sketch: str, ITable: List[dict]) -> Deme:
-    """
-    initialize_deme: Given an initial program sketch it constructs it with the available
-        knobs and intitialize the deme.
-    Args:
-        program_sketch - An initial program sketch. Eg: (AND $ $), '$' represent
-            positions of knobs.
-    Returns: A deme object
-    """
-    knobs = knobs_from_truth_table(ITable)
-    instances = [Instance(value=program_sketch, id=1, score=0.0, knobs=knobs)]
-    hyperparams = Hyperparams(mutation_rate=0.1, crossover_rate=0.6, num_generations=50, neighborhood_size=10)
-    deme = Deme(instances=instances, id="deme-00", q_hyper=hyperparams)
-    deme.construct()
-    return deme
-
-def sample_random_instances(instance: Instance, hyperparams: Hyperparams) -> Instance:
-    """
-    sample_random_instances: Given an instance/sketch it creates a child 
-       by mutating the given instance parent. mutation is based on the 
-       given mutation rate.
-    Args:
-        instance (Instance): The parent instance to mutate.
-        hyperparams (Hyperparams): Hyperparameters including mutation rate.
-    Returns: The new child instance.
-    """
-    child = deepcopy(instance)
-    child.id += 1
-    for knob in child.knobs:
-        # new_value = []
-        if random.random() < hyperparams.mutation_rate:
-            old_symbol = deepcopy(knob.symbol)
-            knob.symbol = f"(NOT {knob.symbol})"
-            child.value = replace_one_symbol(child.value, old_symbol, knob.symbol)
-    return child
 
   
 def knobs_from_truth_table(ITable: List[dict], exclude: str = "O") -> List[Knob]:
@@ -251,52 +216,6 @@ def knobs_from_truth_table(ITable: List[dict], exclude: str = "O") -> List[Knob]
         knobs.append(Knob(symbol=symbol, id=idx, Value=vals))
 
     return knobs
-
-def build_factor_graph_from_deme(deme: Deme) -> FactorGraph:
-    """
-    Build a factor graph where:
-      - each Instance in the deme is a variable node
-      - factors capture dependencies between related instances
-
-    For now, we:
-      * connect instances that share the same base expression skeleton
-        (ignoring (NOT ...) wrappers) and / or
-      * connect parent–child pairs by edit distance / knob mutations.
-    """
-    variables: List[Instance] = list(deme.instances)
-    factors: List[Factor] = []
-
-    # simple helper: strip NOT wrappers from a symbol
-    def strip_not(symbol: str) -> str:
-        symbol = symbol.strip()
-        if symbol.startswith("(NOT ") and symbol.endswith(")"):
-            return symbol[5:-1].strip()
-        return symbol
-
-    for i in range(len(variables)):
-        for j in range(i + 1, len(variables)):
-            inst_i = variables[i]
-            inst_j = variables[j]
-
-            if (isinstance(inst_i.value, str) and isinstance(inst_j.value, str)
-                  and inst_i.value.split()[0] == inst_j.value.split()[0]):
-                
-                def potential(pair: List[Instance], _i=inst_i, _j=inst_j) -> float:
-                    # example: higher potential if they share more base knobs
-                    knobs_i = {strip_not(k.symbol) for k in _i.knobs}
-                    knobs_j = {strip_not(k.symbol) for k in _j.knobs}
-                    common = knobs_i & knobs_j
-                    return 1.0 + len(common)
-
-                factors.append(
-                    Factor(
-                        variables=[inst_i, inst_j],
-                        potential=potential,
-                        name=f"shared-structure: {inst_i.id}-{inst_j.id}",
-                    )
-                )
-
-    return FactorGraph(variables=variables, factors=factors)
 
 class FitnessOracle:
     def __init__(self, target_vals: List[bool]):
