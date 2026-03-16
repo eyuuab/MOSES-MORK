@@ -46,7 +46,7 @@ def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperpara
             iteration=1,
             max_iter=max_iter,
             distance=1,
-            max_dist=20,
+            max_dist=hyperparams.max_dist,
             last_chance=False,
             best_possible_score=1.0
         )
@@ -181,6 +181,7 @@ def main():
         exemplar_selection_size=7,
         min_crossover_neighbors=5,
         evidence_propagation_steps=20,
+        max_dist=20,
     )
     input, target = load_truth_table(csv_path, output_col='O')
     knobs = knobs_from_truth_table(input, exclude='O')
