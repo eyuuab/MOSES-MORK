@@ -65,6 +65,8 @@ class BetaFactorGraph:
         parts = pair_str.split(' -- ')
         if len(parts) != 2: return
         src, dst = parts[0], parts[1]
+
+        if src =="O" or dst == "O": return # Ignore rules involving the invalid variable
         
         # Ensure nodes exist
         self.get_or_create_node(src)
