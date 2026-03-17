@@ -177,7 +177,7 @@ def main():
     # random.seed(42)
     metapop = []
 
-    csv_path = "example_data/test_parity_4.csv"
+    csv_path = "example_data/test_parity_5.csv"
     hyperparams = Hyperparams(
         mutation_rate=0.3,
         crossover_rate=0.5,
@@ -186,7 +186,7 @@ def main():
         neighborhood_size=20,
         fg_type="beta",
         bernoulli_prob=0.6,
-        uniform_prob=0.7,
+        uniform_prob=0.8,
         initial_population_size=2,
         exemplar_selection_size=7,
         min_crossover_neighbors=5,
@@ -196,9 +196,9 @@ def main():
     input, target = load_truth_table(csv_path, output_col='O')
     knobs = knobs_from_truth_table(input, exclude='O')
     
-    s_expr = "(AND (OR (AND A (OR (AND D) (AND (NOT C)))) (AND (NOT D) (OR (AND B) (AND C))) (AND D (NOT A)) (AND (NOT B) A) (AND D C) (AND B C) (AND (NOT B) C)) (OR (AND A) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) (NOT C)) (AND C) (AND (NOT B) (NOT A)) (AND A C) (AND (NOT B) (NOT C)) (AND C D)) (OR (AND (NOT A)) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND (NOT C) D)) (OR (AND C) (AND (NOT D)) (AND (NOT B) (NOT A)) (AND (NOT A) C) (AND B (NOT C)) (AND (NOT A) D) (AND A (NOT D)) (AND C D) (AND (NOT B) (NOT D)) (AND C (NOT D))) (OR (AND (NOT A) (OR (AND B) (AND (NOT C)))) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND A) (AND (NOT D) B)) (OR (AND (NOT A) (OR (AND B) (AND (NOT C)))) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND A) (AND (NOT D) B) (AND (NOT A) B) (AND (NOT A) (NOT C)) (AND A D) (AND (NOT A) D) (AND C) (AND A (NOT B)) (AND A (NOT D)) (AND (NOT A) (NOT D)) (AND B (NOT C))) (OR (AND A) (AND (NOT B) (OR (AND (NOT A)) (AND C))) (AND D) (AND (NOT C)) (AND (NOT B) (NOT C)) (AND B D) (AND (NOT B) D)))"  
-    # exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
-    exemplar = Instance(value=s_expr, id=0, score=0.0, knobs=knobs)
+    # s_expr = "(AND (OR (AND A (OR (AND D) (AND (NOT C)))) (AND (NOT D) (OR (AND B) (AND C))) (AND D (NOT A)) (AND (NOT B) A) (AND D C) (AND B C) (AND (NOT B) C)) (OR (AND A) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) (NOT C)) (AND C) (AND (NOT B) (NOT A)) (AND A C) (AND (NOT B) (NOT C)) (AND C D)) (OR (AND (NOT A)) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND (NOT C) D)) (OR (AND C) (AND (NOT D)) (AND (NOT B) (NOT A)) (AND (NOT A) C) (AND B (NOT C)) (AND (NOT A) D) (AND A (NOT D)) (AND C D) (AND (NOT B) (NOT D)) (AND C (NOT D))) (OR (AND (NOT A) (OR (AND B) (AND (NOT C)))) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND A) (AND (NOT D) B)) (OR (AND (NOT A) (OR (AND B) (AND (NOT C)))) (AND (NOT B) (OR (AND A) (AND (NOT C)))) (AND (NOT D) C) (AND A) (AND (NOT D) B) (AND (NOT A) B) (AND (NOT A) (NOT C)) (AND A D) (AND (NOT A) D) (AND C) (AND A (NOT B)) (AND A (NOT D)) (AND (NOT A) (NOT D)) (AND B (NOT C))) (OR (AND A) (AND (NOT B) (OR (AND (NOT A)) (AND C))) (AND D) (AND (NOT C)) (AND (NOT B) (NOT C)) (AND B D) (AND (NOT B) D)))"  
+    exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
+    # exemplar = Instance(value=s_expr, id=0, score=0.0, knobs=knobs)
     fitness = FitnessOracle(target)
     exemplar.score = fitness.get_fitness(exemplar)
     
