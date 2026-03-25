@@ -254,7 +254,7 @@ def sample_from_factor_graph(
         # --- reconstruct S-expression -------------------------------------
         if not present_subtrees:
             # fallback: pick at least one real knob symbol
-            present_subtrees = [random.choice(sorted(knob_symbols))]
+            present_subtrees = [random.choice(var_names)]
 
         if len(present_subtrees) == 1:
             expr = present_subtrees[0]

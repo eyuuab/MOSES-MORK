@@ -136,6 +136,7 @@ class Hyperparams:
     min_crossover_neighbors: int = 5
     evidence_propagation_steps: int = 20
     max_dist: int = 20
+    feature_order: int = 4
 
 class Deme(Quantale):
     def __init__(self, instances: List[Instance], id: str, q_hyper: Hyperparams) -> None:
