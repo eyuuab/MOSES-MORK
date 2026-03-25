@@ -7,7 +7,7 @@ from Representation.helpers import tokenize
 from Representation.representation import FitnessOracle, Hyperparams, Instance, knobs_from_truth_table
 
 
-class TestMosesParity4NoOutputLeak(unittest.TestCase):
+class TestMosesParity5NoOutputLeak(unittest.TestCase):
     CSV_PATH = "example_data/test_parity_5.csv"
 
     def _run_mode(self, fg_type: str):
@@ -68,10 +68,10 @@ class TestMosesParity4NoOutputLeak(unittest.TestCase):
                 knob_symbols = {k.symbol for k in inst.knobs}
                 self.assertNotIn("O", knob_symbols, f"Found leaked knob O in instance: {inst.value}")
 
-    def test_parity4_beta_no_output_symbol_leak(self):
+    def test_parity5_beta_no_output_symbol_leak(self):
         self._run_mode("beta")
 
-    def test_parity4_alpha_no_output_symbol_leak(self):
+    def test_parity5_alpha_no_output_symbol_leak(self):
         self._run_mode("alpha")
 
 
