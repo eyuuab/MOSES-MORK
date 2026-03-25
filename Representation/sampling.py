@@ -262,7 +262,7 @@ def sample_from_deme(deme: Deme, hyperparams: Hyperparams, exemplar: Instance, g
 
     return deme
 
-def extract_features(csv_path: str, output_col: str = 'O'):
+def extract_features(csv_path: str, output_col: str = 'O', max_order: int = 4):
     """
     Extracts features from a truth table CSV file.
     
@@ -273,7 +273,7 @@ def extract_features(csv_path: str, output_col: str = 'O'):
     Returns:
         A list of features.
     """
-    order = feature_order(csv_path, output_col)
+    order = feature_order(csv_path, output_col, max_order)
     features = interaction_aware_mrmr(
         csv_path=csv_path,
         target_col=output_col,
@@ -323,7 +323,11 @@ def sample_from_TTable(csv_path: str, hyperparams: Hyperparams, exemplar: Instan
     Returns:
         List[Deme]: A list of sampled demes.
     """
-    features = extract_features(csv_path, output_col)
+    features = extract_features(
+        csv_path,
+        output_col,
+        max_order=hyperparams.feature_order,
+    )
 
     demes = []
     metta = MeTTa()

@@ -101,7 +101,7 @@ def calculate_interaction_gain(
     
     return relevance - redundancy
 
-def feature_order(csv_path: str, target_col: str) -> int:
+def feature_order(csv_path: str, target_col: str, max_order: int = 4) -> int:
     """
     A function that returns the practical order limit for feature selection
     Args:
@@ -117,7 +117,7 @@ def feature_order(csv_path: str, target_col: str) -> int:
     else:
         # ``load_truth_table`` returns rows without the output column, so keys are features.
         num_features = len(data_rows[0].keys())
-    return min(num_features, 4)
+    return min(num_features, max_order)
 
 
 def interaction_aware_mrmr(
@@ -286,15 +286,15 @@ def interaction_aware_mrmr(
 #     print('')
     
 #     # Test with different interaction orders
-#     for max_order in [1, 2, 3]:
-#         print(f"\nMax Interaction Order: {max_order}")
+#     for feature_order in [1, 2, 3]:
+#         print(f"\nMax Interaction Order: {feature_order}")
 #         print("-" * 60)
         
 #         results = interaction_aware_mrmr(
 #             csv_file, 
 #             target_column, 
 #             k=0, 
-#             max_interaction_order=max_order,
+#             max_interaction_order=feature_order,
 #             output_type='lists'
 #         )
         

@@ -108,7 +108,8 @@ def grid_search_tuning():
                         num_generations=15,
                         neighborhood_size=20,
                         bernoulli_prob=b, 
-                        uniform_prob=u
+                        uniform_prob=u,
+                        feature_order=3,
                     )
                     
                     exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
@@ -125,7 +126,7 @@ def grid_search_tuning():
                         csv_path=csv_path, 
                         metapop=metapop, 
                         max_iter=5, 
-                        fg_type="beta"
+                        fg_type="alpha"
                     )
                     
                     # Find best score in this run
@@ -167,7 +168,7 @@ def main():
     random.seed(42)
     metapop = []
 
-    csv_path = "example_data/test_bin.csv"
+    csv_path = "example_data/test_parity_5.csv"
     hyperparams = Hyperparams(
         mutation_rate=0.3,
         crossover_rate=0.5,
@@ -182,6 +183,7 @@ def main():
         min_crossover_neighbors=5,
         evidence_propagation_steps=20,
         max_dist=20,
+        feature_order=5,
     )
     input, target = load_truth_table(csv_path, output_col='O')
     knobs = knobs_from_truth_table(input, exclude='O')
