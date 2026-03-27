@@ -1,22 +1,17 @@
-from DependencyMiner.miner import DependencyMiner
 from Representation.representation import *
 from Representation.helpers import *
 from Representation.csv_parser import load_truth_table
-from Representation.selection import select_top_k, tournament_selection
-from Representation.sampling import sample_from_TTable
-from Variation_quantale.crossover import VariationQuantale, crossTopOne
-from Variation_quantale.mutation import Mutation
-from FactorGraph_EDA.beta_bp import BetaFactorGraph
+
 from Moses.run_bp_moses import run_bp_moses, _finalize_metapop
 from Moses.run_abp_moses import run_abp_moses
 import random
-import math
+import numpy as np
 from typing import List
-import datetime
+
 
 def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperparams, 
               knobs: List[Knob], target: List[bool], csv_path: str, 
-              metapop: List[Instance], max_iter: int = 100, fg_type: str = "alpha") -> List[Instance]:
+              metapop: List[Instance], max_iter: int = 100, use_ssm=None, fg_type: str = "alpha") -> List[Instance]:
     """
     Unified entry point for running MOSES optimization.
     
@@ -48,6 +43,7 @@ def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperpara
             distance=1,
             max_dist=hyperparams.max_dist,
             last_chance=False,
+            use_ssm=use_ssm, 
             best_possible_score=1.0
         )
     elif fg_type.lower() == "alpha":
@@ -67,128 +63,32 @@ def run_moses(exemplar: Instance, fitness: FitnessOracle, hyperparams: Hyperpara
         return final_metapop
 
 
-def grid_search_tuning():
-    print("--- Starting Hyperparameter Grid Search ---")
-    
-    # b_probs = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
-    # u_probs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
-    b_probs = [0.5, 0.6, 0.7, 0.8]
-    u_probs = [0.5, 0.6, 0.7, 0.8]
-    
-    
-    random.seed(42)
-    csv_paths = ["example_data/test_parity_3.csv", "example_data/test_parity_4.csv"]
-
-    for csv_path in csv_paths:
-
-        input_data, target = load_truth_table(csv_path, output_col='O')
-        knobs = knobs_from_truth_table(input_data)
-        knobs = [k for k in knobs if k.symbol != 'O']
-        fitness = FitnessOracle(target)
-
-        results = []
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_filename = f"grid_search_results_{csv_path[13:-4]}.txt"
-
-        with open(log_filename, "w") as log_file:
-            header = f"--- Starting Grid Search on {csv_path} at {timestamp} ---\n"
-            print(header.strip())
-            log_file.write(header + "\n")
-            log_file.write(f"{'Bernoulli':<10} | {'Uniform':<10} | {'Score':<10} | {'Top Instance'}\n")
-            log_file.write("-" * 80 + "\n")
-
-
-            for b in b_probs:
-                for u in u_probs:
-                    print(f"\nTesting: Bernoulli={b}, Uniform={u}")
-                    
-                    current_hp = Hyperparams(
-                        mutation_rate=0.3, 
-                        crossover_rate=0.5, 
-                        num_generations=15,
-                        neighborhood_size=20,
-                        bernoulli_prob=b, 
-                        uniform_prob=u,
-                        feature_order=3,
-                    )
-                    
-                    exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
-                    exemplar.score = fitness.get_fitness(exemplar)
-                    
-                    metapop = [exemplar]
-                    
-                    final_pop = run_moses(
-                        exemplar=exemplar, 
-                        fitness=fitness, 
-                        hyperparams=current_hp, 
-                        knobs=knobs,
-                        target=target, 
-                        csv_path=csv_path, 
-                        metapop=metapop, 
-                        max_iter=5, 
-                        fg_type="alpha"
-                    )
-                    
-                    # Find best score in this run
-                    if final_pop:
-                        best_inst = max(final_pop, key=lambda x: x.score)
-                        results.append({
-                            'b': b, 
-                            'u': u, 
-                            'score': best_inst.score, 
-                            'instance': best_inst.value
-                        })
-                        print(f"-> Result: Score {best_inst.score:.4f}")
-                        log_line = f"{b:<10.1f} | {u:<10.1f} | {best_inst.score:<10.4f} | {best_inst.value}\n"
-                        log_file.write(log_line)
-                        log_file.flush() # Ensure it's written in case of crash
-                    else:
-                        print("-> Result: No population return")
-                        log_file.write(f"{b:<10.1f} | {u:<10.1f} | {'N/A':<10} | No Population\n")
-                        
-            print("\n--- Tuning Results ---")
-            log_file.write("\n" + "="*80 + "\n")
-            log_file.write("FINAL SUMMARY (Sorted by Score descending)\n")
-            log_file.write("="*80 + "\n")
-
-            results.sort(key=lambda x: x['score'], reverse=True)
-            
-            for r in results:
-                summary_line = f"Score: {r['score']:.4f} | B={r['b']}, U={r['u']} | Inst: {r['instance']}"
-                print(summary_line)
-                log_file.write(summary_line + "\n")
-
-            if results:
-                best = results[0]
-                best_msg = f"\n*** Best Configuration: B={best['b']}, U={best['u']} with Score {best['score']:.4f} ***"
-                print(best_msg)
-                log_file.write(best_msg + "\n")
-
 def main(): 
-    random.seed(42)
+
+    # np.random.seed(42)
+    # random.seed(42)
     metapop = []
 
-    csv_path = "example_data/test_parity_5.csv"
+    csv_path = "example_data/test_parity_4.csv"
     hyperparams = Hyperparams(
         mutation_rate=0.3,
         crossover_rate=0.5,
         num_generations=30,
-        max_iter=300,
+        max_iter=100,
         neighborhood_size=20,
         fg_type="beta",
-        bernoulli_prob=0.6,
-        uniform_prob=0.8,
+        bernoulli_prob=0.5,
+        uniform_prob=0.6,
         initial_population_size=2,
         exemplar_selection_size=7,
         min_crossover_neighbors=5,
-        evidence_propagation_steps=20,
-        max_dist=20,
-        feature_order=5,
+        evidence_propagation_steps=30,
+        max_dist=50,
+        feature_order=4,
     )
     input, target = load_truth_table(csv_path, output_col='O')
     knobs = knobs_from_truth_table(input, exclude='O')
     
-
     exemplar = Instance(value=f"(AND)", id=0, score=0.0, knobs=knobs)
     fitness = FitnessOracle(target)
     exemplar.score = fitness.get_fitness(exemplar)
@@ -205,10 +105,10 @@ def main():
         csv_path=csv_path, 
         metapop=metapop,
         max_iter=hyperparams.max_iter,
+        use_ssm=True,
         fg_type=hyperparams.fg_type,
     )
     
     
 if __name__ == "__main__":
     main()
-    # grid_search_tuning()

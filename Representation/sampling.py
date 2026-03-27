@@ -273,6 +273,10 @@ def extract_features(csv_path: str, output_col: str = 'O', max_order: int = 4):
     Returns:
         A list of features.
     """
+    if not os.path.exists(csv_path):
+        # print(f"Error: CSV file '{csv_path}' not found.")
+        return []
+    
     order = feature_order(csv_path, output_col, max_order)
     features = interaction_aware_mrmr(
         csv_path=csv_path,

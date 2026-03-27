@@ -98,7 +98,7 @@ class TestTreeParsing(unittest.TestCase):
         tokens = tokenize(s)
         root = parse_sexpr(tokens)
 
-        self.assertEqual(root.label, "GROUP")
+        self.assertEqual(root.label, "OR")
         self.assertEqual(len(root.children), 2)
         self.assertEqual(str(root.children[0]), "(NOT A)")
         self.assertEqual(str(root.children[1]), "B")

@@ -40,7 +40,9 @@ def parse_sexpr(tokens):
     if token == '(':
         if tokens[0] == '(':
             #((NOT A) B) -> No explicit label, treated as implicit 'GROUP'
-            node = TreeNode("GROUP") 
+            # node = TreeNode("GROUP")
+            node = TreeNode("OR")
+             
         else:
             node = TreeNode(tokens.pop(0))
         
